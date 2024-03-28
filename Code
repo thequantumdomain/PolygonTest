@@ -1,104 +1,44 @@
 ******************************************************************************************************************************
 Code:
 
-const Web3 = require('web3');
-
-const web3 = new Web3('https://polygon-mumbai.g.alchemy.com/v2/....');
-
-const contractAddress = '0x...';
-
-const functionSelector = '0x...';
-
-// Specify your sender's private key here
-const senderPrivateKey = '56.....';
-
-async function callFunction() {
-    try {
-        const value = '0x' + BigInt('22781797092868169288725644184323813601368064181519283466580965179100903181887').toString(16);
-        const weiToSend = '420000000000';
-
-        const callData = functionSelector + web3.eth.abi.encodeParameter('uint256', value).slice(2);   /// Are RPC function parameters configured correctly?
-
-        const senderAccount = web3.eth.accounts.privateKeyToAccount(senderPrivateKey);
-
-        const maxPriorityFeePerGas = web3.utils.toWei('30', 'gwei'); // Example: 30 Gwei      
-        const maxFeePerGas = web3.utils.toWei('30', 'gwei'); // Example: 30 Gwei
-
-        const txObject = {
-            to: contractAddress,
-            data: callData,
-            value: weiToSend,
-            gas: 1000000, // Adjust gas according to your needs
-            maxPriorityFeePerGas,
-            maxFeePerGas,
-            nonce: await web3.eth.getTransactionCount(senderAccount.address)
-        };
-
-        const signedTx = await senderAccount.signTransaction(txObject);
-
-        const txReceipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-
-        console.log('Transaction Hash:', txReceipt.transactionHash);
-    } catch (error) {
-        console.error('Error calling the function:', error);
-    }
-}
-
-callFunction();
-
-******************************************************************************************************************************
-
-Each time I send the transaction, it fails due to "invalid amount". 
-Can you explain why transaction isn't successful? 
-And how to ensure it?
-
-I believe it is something to do with RPC parameters.
-Are they configured correctly based on EIP-1559 paremeters? (maxPriorityFeePerGas and maxFeePerGas)?
-
-******************************************************************************************************************************
-
-
-LATEST UPDATE:
-
 const { ethers } = require('ethers');
 
-const alchemyProvider = new ethers.providers.JsonRpcProvider('https://polygon-mumbai.g.alchemy.com/v2/...');
+const provider = new ethers.providers.JsonRpcProvider('https://polygon-mumbai.g.alchemy.com/v2/H-...'); // Insert alchemy API URL
 
-const contractAddress = '0x...';
+const contractAddress = '0x...'; // Insert target contract
+const firstFunctionSelector = '0x...'; // Insert first function selector
+const secondFunctionSelector = '0x...'; // Insert second function selector
 
-const functionSelector = '0x...';
-
-// Specify your sender's private key here
-const senderPrivateKey = '31c...';
+// Define the sender's private key
+const senderPrivateKey = '3...'; // Replace with the actual private key
 
 async function callFunction() {
     try {
-        const value = ethers.BigNumber.from('22781797092868169288725644184323813601368064181519283466580965179100903181887');
-        const weiToSend = ethers.utils.parseEther('0.42');
+        const wallet = new ethers.Wallet(senderPrivateKey, provider);
 
-        const callData = functionSelector + ethers.utils.defaultAbiCoder.encode(['uint256'], [value]).slice(2);
-
-        const wallet = new ethers.Wallet(senderPrivateKey, alchemyProvider);
-
-        const PRIORITY_FEE = ethers.utils.parseUnits('1', 'gwei');
-        const MAX_FEE = ethers.utils.parseUnits('30', 'gwei');
-        const CHAIN_ID = await alchemyProvider.getNetwork().then(network => network.chainId);
-
-        const txObject = {
+        // 1st interaction: Call 0x... function
+        const firstCallData = firstFunctionSelector;
+        const firstTx = {
+            from: wallet.address,
             to: contractAddress,
-            data: callData,
-            value: weiToSend,
-            gasLimit: 500000, // Adjust gas according to your needs
-            chainId: CHAIN_ID,
-            type: 2, // EIP 1559
-            maxPriorityFeePerGas: PRIORITY_FEE,
-            maxFeePerGas: MAX_FEE,
-            nonce: await wallet.getTransactionCount()
+            data: firstCallData,
+        };
+        const firstTxResult = await provider.call(firstTx);
+
+        // Extract the argument and value from the response of the first call
+        const argument = firstTxResult.slice(0, 66); // Extract the first 32 bytes (64 characters) as the argument
+        const hexValue = firstTxResult.slice(66); // Extract the value
+
+        // 2nd interaction: Use output from first call to send transaction
+        const secondTx = {
+            to: contractAddress,
+            data: secondFunctionSelector + argument.slice(2), // Remove '0x' prefix from the argument
+            value: ethers.BigNumber.from(hexValue), // Convert hexadecimal string to BigNumber
+            gasLimit: 500000,
+            chainId: 80001, // Mumbai testnet
         };
 
-        const signedTx = await wallet.signTransaction(txObject);
-        const txResponse = await alchemyProvider.sendTransaction(signedTx);
-
+        const txResponse = await wallet.sendTransaction(secondTx);
         console.log('Transaction Hash:', txResponse.hash);
     } catch (error) {
         console.error('Error calling the function:', error);
@@ -107,3 +47,11 @@ async function callFunction() {
 
 callFunction();
 
+******************************************************************************************************************************
+
+There are two separate interactions to make with the contract
+First to call the `0x...` function and then use the output to send the transaction
+You need to modify 'argument' and 'value' based on the response from the call using firstTx
+And figure out how to decode the response after the first call, it does not return a uint256
+
+******************************************************************************************************************************
