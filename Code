@@ -62,14 +62,14 @@ LATEST UPDATE:
 
 const { ethers } = require('ethers');
 
-const alchemyProvider = new ethers.providers.JsonRpcProvider('https://polygon-mumbai.g.alchemy.com/v2/H-NeenHPLJSSEKk3-c1sgoyU5R-O_L9Z');
+const alchemyProvider = new ethers.providers.JsonRpcProvider('https://polygon-mumbai.g.alchemy.com/v2/...');
 
-const contractAddress = '0x57C98f1f2BC34A0054CBc1257fcc9333c1b6730c';
+const contractAddress = '0x...';
 
-const functionSelector = '0xddc24be3';
+const functionSelector = '0x...';
 
 // Specify your sender's private key here
-const senderPrivateKey = '31c3259ce2eb39d49886638e0f7d956ff28df1e7014871dd38062d6792155637';
+const senderPrivateKey = '31c...';
 
 async function callFunction() {
     try {
