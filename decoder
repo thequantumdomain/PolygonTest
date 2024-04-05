@@ -1,0 +1,36 @@
+const Web3 = require('web3');
+const web3 = new Web3('https://polygon-mumbai.g.alchemy.com/v2/H-NeenHPLJSSEKk3-c1sgoyU5R-O_L9Z');
+
+const contractAddress = '0x57C98f1f2BC34A0054CBc1257fcc9333c1b6730c';
+
+const functionSelector = '0x838ad0ee';
+
+async function callFunction() {
+    try {
+        const callData = functionSelector;
+
+        const data = await web3.eth.call({
+            to: contractAddress,
+            data: callData
+        });
+
+        console.log('data:', data);
+    } catch (error) {
+        console.error('Error calling the function:', error);
+    }
+}
+
+callFunction();
+
+const encodedData = "43616c6c207468697320636f6e747261637420776974682066756e6374696f6e207369676e6174757265202730786464633234626533272070726f766964696e672061202775696e743235362720617267756d656e74206f662076616c75653a20323237383137393730393238363831363932383837323536343431383433323338313336303133363830363431383135313932383334363635383039363531373931303039303331383138383720416c736f2073656e6420736f6d65207765693a203432303030303030303030300000000000000000000000000000000000";
+
+// Convert hexadecimal string to bytes
+const bytes = [];
+for (let i = 0; i < encodedData.length; i += 2) {
+    bytes.push(parseInt(encodedData.substr(i, 2), 16));
+}
+
+// Convert bytes to string
+const decodedString = new TextDecoder().decode(new Uint8Array(bytes));
+
+console.log(decodedString);
